@@ -1,6 +1,9 @@
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
+use raylib::math::Vector2;
 use shipyard::Component;
+
+use crate::{HEIGHT, WIDTH};
 
 // Point and vec are not generic for now. The main reason is that it's "simple" enough so far.
 // If more overlap appears, these could be combined - there is some duplication currently.
@@ -28,8 +31,8 @@ impl Point2D {
 impl Distribution<Point2D> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Point2D {
         Point2D {
-            x: rng.gen(),
-            y: rng.gen(),
+            x: rng.gen_range(0..WIDTH),
+            y: rng.gen_range(0..HEIGHT),
         }
     }
 }
@@ -49,8 +52,8 @@ impl Vec2d {
 impl Distribution<Vec2d> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec2d {
         Vec2d {
-            x: rng.gen(),
-            y: rng.gen(),
+            x: rng.gen_range(0.0..1.0),
+            y: rng.gen_range(0.0..1.0),
         }
     }
 }
@@ -60,6 +63,15 @@ impl Distribution<Vec2d> for Standard {
 /// Position is a conventional variant of a point, it denotes a location in space
 #[derive(Debug, Component)]
 pub struct Position(pub Point2D);
+
+impl Into<Vector2> for &Position {
+    fn into(self) -> Vector2 {
+        Vector2 {
+            x: self.0.x as f32,
+            y: self.0.y as f32,
+        }
+    }
+}
 
 /// Velocity is a vector that has a direction and a magnitude.
 /// Direction models direction of the player, magnitude models speed.

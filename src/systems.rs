@@ -1,7 +1,10 @@
 use raylib::prelude::*;
 use shipyard::*;
 
-use crate::entities_components::{Position, RLHandle, RLThread, Velocity};
+use crate::{
+    entities_components::{Position, RLHandle, RLThread, Velocity},
+    PLAYER_SIZE,
+};
 
 pub fn window_should_close(world: &World) -> bool {
     let ref rl = world.borrow::<UniqueViewMut<RLHandle>>().unwrap().0;
@@ -32,14 +35,18 @@ fn render_players(
 
     // Each player is shown with position as dot, line as direction they're facing
     for (pos, vel) in (&positions, &velocities).iter() {
-        let norm_vec = vel.normalize() * 15.0;
+        let norm_vec = vel.normalize() * (PLAYER_SIZE * 2.0);
 
-        d.draw_circle(pos.0.x as i32, pos.0.y as i32, 5.0, Color::BLACK);
-        d.draw_line(
-            pos.0.x as i32,
-            pos.0.y as i32,
-            pos.0.x as i32 + norm_vec.0.x as i32,
-            pos.0.y as i32 + norm_vec.0.y as i32,
+        d.draw_circle(pos.0.x as i32, pos.0.y as i32, PLAYER_SIZE, Color::BLACK);
+        let ray_pos: Vector2 = pos.into();
+        let ray_end_pos: Vector2 = Vector2 {
+            x: ray_pos.x + norm_vec.0.x,
+            y: ray_pos.y + norm_vec.0.y,
+        };
+        d.draw_line_ex(
+            ray_pos,
+            ray_end_pos,
+            f32::max(PLAYER_SIZE * 0.5, 1.0),
             Color::BLUE,
         )
     }

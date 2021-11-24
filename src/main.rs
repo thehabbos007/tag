@@ -9,7 +9,8 @@ use crate::entities_components::*;
 use crate::systems::*;
 
 /// Number of players in `world`
-const PLAYER_COUNT: usize = 5;
+const PLAYER_COUNT: usize = 50;
+const PLAYER_SIZE: f32 = 10.0;
 /// Width of the `world` view
 const WIDTH: u16 = 1024;
 /// Height of the `world` view
@@ -28,12 +29,10 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     world
-        .bulk_add_entity((0..PLAYER_COUNT).map(|_| {
-            (
-                Position(rng.gen::<Point2D>().within(WIDTH, HEIGHT)),
-                Velocity(Vec2d::new(1.0, 1.0)),
-            )
-        }))
+        .bulk_add_entity(
+            (0..PLAYER_COUNT)
+                .map(|_| (Position(rng.gen::<Point2D>()), Velocity(rng.gen::<Vec2d>()))),
+        )
         .next();
 
     let world = Rc::new(world);
