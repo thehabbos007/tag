@@ -12,9 +12,9 @@ use crate::systems::*;
 const PLAYER_COUNT: usize = 50;
 const PLAYER_SIZE: f32 = 10.0;
 /// Width of the `world` view
-const WIDTH: u16 = 1024;
+const WIDTH: i16 = 1024;
 /// Height of the `world` view
-const HEIGHT: u16 = 1024;
+const HEIGHT: i16 = 1024;
 
 fn main() {
     let (mut rl, thread) = raylib::init()
@@ -29,10 +29,7 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     world
-        .bulk_add_entity(
-            (0..PLAYER_COUNT)
-                .map(|_| (Position(rng.gen::<Point2D>()), Velocity(rng.gen::<Vec2d>()))),
-        )
+        .bulk_add_entity((0..PLAYER_COUNT).map(|_| (rng.gen::<Position>(), rng.gen::<Velocity>())))
         .next();
 
     let world = Rc::new(world);
