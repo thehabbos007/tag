@@ -7,4 +7,5 @@ edition = "2018"
 
 [dependencies]
 rand = { version = "0.8.4" }
-shipyard = { git = "https://github.com/leudz/shipyard", features = ["proc"] }
+raylib = { version = "3.7" }
+shipyard = { git = "https://github.com/leudz/shipyard", features = ["proc", "thread_local"] }

@@ -63,7 +63,7 @@ pub struct Position(pub Point2D);
 
 /// Velocity is a vector that has a direction and a magnitude.
 /// Direction models direction of the player, magnitude models speed.
-#[derive(Debug, Component)]
+#[derive(Clone, Debug, Component)]
 pub struct Velocity(pub Vec2d);
 
 impl Velocity {
@@ -74,4 +74,37 @@ impl Velocity {
         let fy = self.0.y as f32;
         f32::sqrt(fx * fx + fy * fy)
     }
+
+    /// Quake-style fast inverse square root use for normalizing vectors
+    /// https://stackoverflow.com/a/59083859
+    fn inv_sqrt(&self) -> f32 {
+        let x = self.magnitude();
+        let i = x.to_bits();
+        let i = 0x5f3759df - (i >> 1);
+        let y = f32::from_bits(i);
+
+        y * (1.5 - 0.5 * x * y * y)
+    }
+
+    /// Normalize given vector, get new vector from that.
+    pub fn normalize(&self) -> Self {
+        let factor = self.inv_sqrt();
+        self.clone() * factor
+    }
 }
+
+impl std::ops::Mul<f32> for Velocity {
+    type Output = Velocity;
+    fn mul(self, value: f32) -> Velocity {
+        Velocity(Vec2d {
+            x: self.0.x * value,
+            y: self.0.y * value,
+        })
+    }
+}
+
+// Wrap raylib structs in a Shipyard ECS component.
+#[derive(Component)]
+pub struct RLHandle(pub raylib::RaylibHandle);
+#[derive(Component)]
+pub struct RLThread(pub raylib::RaylibThread);
