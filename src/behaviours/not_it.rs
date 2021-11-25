@@ -35,8 +35,8 @@ impl BehaviourAction for RandomBehaviour {
 
         // Every now and then the player's direction changes
         if rng.gen_bool(0.005) {
-            *x = (*x + rng.gen_range(-1..1)) % 5;
-            *y = (*y + rng.gen_range(-1..1)) % 5;
+            *x = (*x + rng.gen_range(-1.0..1.0)) % 5.0;
+            *y = (*y + rng.gen_range(-1.0..1.0)) % 5.0;
         }
     }
 }

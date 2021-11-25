@@ -9,3 +9,4 @@ edition = "2018"
 rand = { version = "0.8.4" }
 raylib = { version = "3.7" }
 shipyard = { git = "https://github.com/leudz/shipyard", features = ["proc", "thread_local"] }
+spade = "1.8.2"

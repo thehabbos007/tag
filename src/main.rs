@@ -6,6 +6,7 @@ use std::time::SystemTime;
 
 use rand::prelude::*;
 use shipyard::*;
+use spade::rtree::RTree;
 
 mod behaviours;
 mod entities_components;
@@ -34,8 +35,8 @@ fn main() {
 
     // Time is kept and updated after every frame/tick
     world.add_unique(Time(0)).unwrap();
-    // RecentlyTagged players map Entity Ids to a timestamp
-    world.add_unique(RecentlyTagged(HashMap::new())).unwrap();
+    // R*-Tree over all players used each frame
+    world.add_unique(PlayersPositionRTree::default()).unwrap();
 
     let mut rng = rand::thread_rng();
 
@@ -44,7 +45,8 @@ fn main() {
             (
                 rng.gen::<Position>(),
                 rng.gen::<Velocity>(),
-                Tagged(TagState::default()),
+                RecentlyTagged::default(),
+                Tagged::default(),
                 PlayerBehaviour::default(),
             )
         }))
