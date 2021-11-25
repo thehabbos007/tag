@@ -23,3 +23,6 @@ spade = "1.8.2"
 [[bench]]
 name = "performance_benchmarks"
 harness = false
+
+[profile.release]
+lto = true
