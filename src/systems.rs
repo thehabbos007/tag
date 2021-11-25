@@ -29,11 +29,12 @@ pub fn tag_initial_random_player(mut tagged: ViewMut<Tagged>) {
     tagged.0 = TagState::It;
 }
 
+pub const TICK: &str = "TICK";
 pub const FRAME: &str = "FRAME";
 
 /// A collections of systems to run for each frame.
 pub fn register_workloads(world: &World) {
-    Workload::builder(FRAME)
+    Workload::builder(TICK)
         // Move players given their velocity every tick
         .with_system(update_player_position)
         .with_system(update_player_position_rtee)
@@ -42,6 +43,10 @@ pub fn register_workloads(world: &World) {
         .with_system(tag_collided_players)
         // Clear recently tagged players
         .with_system(clear_old_recently_tagged)
+        .add_to_world(&world)
+        .unwrap();
+
+    Workload::builder(FRAME)
         // Render the players at the end of the frame tick
         .with_system(render_players)
         .add_to_world(&world)
