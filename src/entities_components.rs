@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use raylib::math::Vector2;
@@ -190,6 +188,7 @@ pub struct PlayersPositionRTree(pub RTree<RTreeData>);
 
 #[derive(Clone, Debug)]
 pub struct RTreeData {
+    pub entity_id: EntityId,
     pub position: Position,
     pub velocity: Velocity,
     pub recently_tagged: bool,

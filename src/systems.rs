@@ -71,7 +71,9 @@ fn update_player_position_rtee(
     uvm_player_pos_rtree.0 = RTree::bulk_load(
         (&v_position, &v_velocity, &v_recently_tagged, &v_tagged)
             .iter()
-            .map(|(pos, vel, recently_tagged, tag)| RTreeData {
+            .with_id()
+            .map(|(entity_id, (pos, vel, recently_tagged, tag))| RTreeData {
+                entity_id,
                 position: pos.clone(),
                 velocity: vel.clone(),
                 recently_tagged: recently_tagged.0.is_some(),
@@ -123,18 +125,16 @@ fn commit_player_behaviour(
     }
 }
 
+/// Tag players that collide with "it" players.
+/// Using the [PlayersPositionRTree] it is possible to do this with good performance.
 fn tag_collided_players(
     v_position: View<Position>,
     uv_time: UniqueView<Time>,
+    uv_player_rtree: UniqueView<PlayersPositionRTree>,
     mut uvm_tag_count: UniqueViewMut<TagCount>,
     mut vm_recently_tagged: ViewMut<RecentlyTagged>,
     mut vm_tagged: ViewMut<Tagged>,
-    //`mut recently_tagged: UniqueViewMut<RecentlyTagged>,
 ) {
-    // The execution time characteristics of the following is _not ideal_.
-    // Collisions should ideally be handled through specialized data structures.
-    // For example quad trees.
-
     // The currently, and only, tagged player
     let tagged_it = (&v_position, &vm_tagged)
         .iter()
@@ -142,24 +142,24 @@ fn tag_collided_players(
         .find(|(_, (_, tag))| tag.0 == TagState::It)
         .clone();
 
+    let mut have_tagged_new = false;
     if let Some((it_id, (it_pos, _))) = tagged_it {
-        let mut have_tagged_new = false;
-
-        for (pos, mut tag, mut recently_tagged) in
-            (&v_position, &mut vm_tagged, &mut vm_recently_tagged).iter()
-        {
-            // The tagged player is touching another, non-tagged player
-            if tag.0 != TagState::It
-                && (&it_pos).distance_to(&pos) <= PLAYER_SIZE * 2.0
-                && recently_tagged.0.is_none()
+        let closest = uv_player_rtree.0.nearest_n_neighbors(&it_pos.0, 2);
+        // skip the first, as that would be the current "it" player
+        if let Some(RTreeData { entity_id, .. }) = closest.get(1) {
+            if let Ok((position, mut tagged, mut recently_tagged)) =
+                (&v_position, &mut vm_tagged, &mut vm_recently_tagged).get(entity_id.clone())
             {
-                // Untag the player who is currently "it", tag the "non-it" player and stop.
-                tag.0 = TagState::It;
-                have_tagged_new = true;
+                if tagged.0 != TagState::It
+                    && recently_tagged.0.is_none()
+                    && it_pos.distance_to(position) <= PLAYER_SIZE * 2.0
+                {
+                    have_tagged_new = true;
+                    tagged.0 = TagState::It;
 
-                // mark newly-tagged player as recently tagged
-                recently_tagged.0 = Some(uv_time.0);
-                break;
+                    recently_tagged.0 = Some(uv_time.0);
+                    uvm_tag_count.0 += 1;
+                }
             }
         }
 
@@ -173,7 +173,6 @@ fn tag_collided_players(
                 recently_tagged.0 = Some(uv_time.0);
 
                 // Increment total tag count
-                uvm_tag_count.0 += 1;
             };
         }
     }
