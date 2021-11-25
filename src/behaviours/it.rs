@@ -46,12 +46,17 @@ impl BehaviourAction for RandomBehaviour {
 pub struct ChaseNearestBehaviour;
 
 impl BehaviourAction for ChaseNearestBehaviour {
-    fn revise_orientation(&self, mut ctx: BehaviourContext) {
+    fn revise_orientation(&self, ctx: BehaviourContext) {
         if let Some(near) = ctx.nearest_5_neighbors.get(0) {
-            if !near.recently_tagged {
+            let my_pos = ctx.current_player.0;
+            if my_pos.distance_to(&near.position) > 0.5 {
                 let my_vel = ctx.current_player.1;
                 let near_pos = &near.position;
-                let new_vel = my_vel.rotate_towards(&near_pos.0);
+
+                let v_target = my_pos.velocity_facing(near_pos);
+                let angle = my_vel.angle_between(&v_target);
+
+                let new_vel = my_vel.rotate_angle(angle);
                 *my_vel = new_vel;
             }
         } else {

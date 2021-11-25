@@ -59,6 +59,13 @@ impl Position {
         let [x2, y2] = other.0;
         f32::sqrt(f32::powi(x2 - x1, 2) + f32::powi(y2 - y1, 2))
     }
+
+    pub fn velocity_facing(&self, other: &Position) -> Velocity {
+        let [x1, y1] = [self.0[0], self.0[1]];
+        let [x2, y2] = [other.0[0], other.0[1]];
+
+        Velocity::new(x2 - x1, y2 - y1).normalize()
+    }
 }
 
 /// Velocity is a vector that has a direction and a magnitude.
@@ -108,18 +115,30 @@ impl Velocity {
         self.clone() * factor
     }
 
-    pub fn rotate_towards(&self, other: &Geo2D) -> Self {
+    pub fn angle_between(&self, other: &Velocity) -> f32 {
         let [x1, y1] = [self.0[0], self.0[1]];
-        let [x2, y2] = [other[0], other[1]];
+        let [x2, y2] = [other.0[0], other.0[1]];
 
         let dot = x1 * x2 + y1 * y2;
         let det = x1 * y2 - y1 * x2;
-        let angle = f32::atan2(det, dot);
+
+        f32::atan2(det, dot)
+    }
+
+    pub fn rotate_angle(&self, angle: f32) -> Self {
+        let [x1, y1] = [self.0[0], self.0[1]];
 
         let x = x1 * f32::cos(angle) - y1 * f32::sin(angle);
         let y = x1 * f32::sin(angle) + y1 * f32::cos(angle);
 
         Self::new(x, y)
+    }
+
+    pub fn negate_velocity(mut self) -> Self {
+        self.0[0] = -self.0[0];
+        self.0[1] = -self.0[1];
+
+        self
     }
 }
 
@@ -194,22 +213,55 @@ pub struct RLThread(pub raylib::RaylibThread);
 
 #[cfg(test)]
 mod test {
+    use crate::entities_components::Position;
+
     use super::Velocity;
-    macro_rules! assert_delta {
-        ($x:expr, $y:expr, $d:expr) => {
-            if !($x - $y < $d || $y - $x < $d) {
-                panic!();
-            }
-        };
-    }
+    // macro_rules! assert_delta {
+    //     ($x:expr, $y:expr, $d:expr) => {
+    //         if !($x - $y < $d || $y - $x < $d) {
+    //             panic!();
+    //         }
+    //     };
+    // }
+
+    // #[test]
+    // fn test_rotate_to_point() {
+    //     let my_pos = Position::new(600., 302.);
+    //     let my_vel = Velocity::new(1.3, -0.7);
+
+    //     let near_pos = Position::new(443., 232.);
+
+    //     let angle = my_pos.angle_to(&near_pos);
+    //     let new_vel = my_vel.rotate_angle(angle);
+
+    //     dbg!(&my_vel, &new_vel);
+    // }
 
     #[test]
-    fn test_rotation() {
-        let v1 = Velocity::new(1.0, 1.0);
-        let v2 = Velocity::new(-7.0, 7.0);
-        let rotated = v1.rotate_towards(&v2.0).0;
+    fn test_points() {
+        let m1 = Position::new(499.80347, 968.45544);
+        let m2 = Position::new(502.17087, 969.16724);
+        let m3 = Position::new(504.32806, 967.95984);
 
-        assert_delta!(rotated[0], -1.0, 0.001);
-        assert_delta!(rotated[1], 1.0, 0.001);
+        let p1 = Position::new(300.75153, 774.56506);
+        let p2 = Position::new(302.9394, 776.5747);
+        let p3 = Position::new(305.12726, 778.58435);
+        let mut my_vel = Velocity::new(2.157187, -1.2073877);
+
+        let mut cl = |my_pos: Position, other_pos| {
+            let v_target = my_pos.velocity_facing(other_pos);
+
+            let angle = my_vel.angle_between(&v_target);
+            // let angle = my_pos.angle_to(&other_pos);
+            dbg!(angle);
+
+            my_vel = my_vel.rotate_angle(angle);
+            my_vel.clone()
+        };
+
+        dbg!(cl(m1, &p1));
+        dbg!(cl(m2, &p2));
+        dbg!(cl(m3, &p3));
+        assert!(false);
     }
 }

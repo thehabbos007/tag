@@ -100,9 +100,13 @@ fn commit_player_behaviour(
         let tag = &tag.0;
 
         // 6 nearest neighbors including self
-        let mut nearest_5_neighbors = uv_player_rtree.0.nearest_n_neighbors(&pos.0, 6);
-        // But exclude first, as this will always be the current point.
-        nearest_5_neighbors.remove(0);
+        // But exclude first, as this will be the current point.
+        let nearest_5_neighbors = uv_player_rtree
+            .0
+            .nearest_neighbor_iterator(&pos.0)
+            .skip(1)
+            .take(5)
+            .collect();
 
         // When evaluating the behaviour of the agent, some simple context is set up
         let ctx = BehaviourContext {

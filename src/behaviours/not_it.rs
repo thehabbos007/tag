@@ -1,17 +1,19 @@
 use rand::Rng;
 
+use crate::entities_components::TagState;
+
 use super::{BehaviourAction, BehaviourContext};
 
 /// When an actor is "not it" they can behave in these states.
 #[derive(Debug)]
 pub enum NotItBehaviour {
-    Random(RandomBehaviour),
     OpposeIt(OpposeItBehaviour),
+    Random(RandomBehaviour),
 }
 
 impl Default for NotItBehaviour {
     fn default() -> Self {
-        NotItBehaviour::Random(RandomBehaviour)
+        NotItBehaviour::OpposeIt(OpposeItBehaviour)
     }
 }
 
@@ -46,7 +48,25 @@ impl BehaviourAction for RandomBehaviour {
 pub struct OpposeItBehaviour;
 
 impl BehaviourAction for OpposeItBehaviour {
-    fn revise_orientation(&self, _ctx: BehaviourContext) {
-        // let (current_pos, current_vel) = ctx.current_player;
+    fn revise_orientation(&self, ctx: BehaviourContext) {
+        if let Some(near) = ctx
+            .nearest_5_neighbors
+            .iter()
+            .find(|n| n.tagged.0 == TagState::It)
+        {
+            let my_pos = ctx.current_player.0;
+            if my_pos.distance_to(&near.position) > 0.5 {
+                let my_vel = ctx.current_player.1;
+                let near_pos = &near.position;
+
+                let v_target = my_pos.velocity_facing(near_pos);
+                let angle = my_vel.angle_between(&v_target);
+
+                let new_vel = my_vel.rotate_angle(angle).negate_velocity();
+                *my_vel = new_vel;
+            }
+        } else {
+            RandomBehaviour::revise_orientation(&RandomBehaviour, ctx);
+        }
     }
 }

@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::thread;
 use std::time::SystemTime;
 
 use rand::prelude::*;
@@ -73,5 +74,7 @@ fn main() {
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("time to be readable")
             .as_millis();
+
+        // thread::sleep(std::time::Duration::from_millis(500))
     }
 }
