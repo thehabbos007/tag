@@ -47,7 +47,7 @@ pub struct ChaseNearestBehaviour;
 
 impl BehaviourAction for ChaseNearestBehaviour {
     fn revise_orientation(&self, ctx: BehaviourContext) {
-        if let Some(near) = ctx.nearest_5_neighbors.get(0) {
+        if let Some(near) = ctx.nearest_5_neighbors.iter().find(|n| !n.recently_tagged) {
             let my_pos = ctx.current_player.0;
             if my_pos.distance_to(&near.position) > 0.5 {
                 let my_vel = ctx.current_player.1;

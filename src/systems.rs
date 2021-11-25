@@ -194,7 +194,6 @@ fn clear_old_recently_tagged(
             }
         }
     });
-    // for (mut rt) in (&mut vm_recently_tagged).iter().filter(|t| t.0.is_some()) {}
 }
 
 /// Render player positions into the raylib framebuffer.

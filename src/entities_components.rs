@@ -178,7 +178,7 @@ pub struct Time(pub u128);
 #[derive(Default, Component)]
 pub struct TagCount(pub u64);
 
-/// Map of recently tagged players
+/// Has the player been tagged recently? At what timestamp if so
 #[derive(Default, Component)]
 pub struct RecentlyTagged(pub Option<u128>);
 
