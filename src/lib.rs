@@ -32,6 +32,7 @@ pub fn initialize_world(player_count: usize) -> World {
             (
                 rng.gen::<Position>(),
                 rng.gen::<Velocity>(),
+                rng.gen::<Endurance>(),
                 RecentlyTagged::default(),
                 Tagged::default(),
                 PlayerBehaviour::default(),

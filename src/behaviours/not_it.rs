@@ -33,12 +33,11 @@ pub struct RandomBehaviour;
 impl BehaviourAction for RandomBehaviour {
     fn revise_orientation(&self, ctx: BehaviourContext) {
         let mut rng = rand::thread_rng();
-        let [x, y] = &mut ctx.current_player.1 .0;
+        let vel = ctx.current_player.1;
 
         // Every now and then the player's direction changes
-        if rng.gen_bool(0.005) {
-            *x = (*x + rng.gen_range(-1.0..1.0)) % 5.0;
-            *y = (*y + rng.gen_range(-1.0..1.0)) % 5.0;
+        if rng.gen_bool(0.02) {
+            *vel = vel.rotate_angle(rng.gen_range(0.0..std::f32::consts::PI))
         }
     }
 }

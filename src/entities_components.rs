@@ -73,7 +73,8 @@ pub struct Velocity(pub Geo2D);
 
 impl Distribution<Velocity> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Velocity {
-        Velocity::new(rng.gen_range(-3.0..3.0), rng.gen_range(-3.0..3.0))
+        // tau = 2 * PI
+        Velocity::new(0., 2.).rotate_angle(rng.gen_range(0.0..(std::f32::consts::TAU)))
     }
 }
 
@@ -158,6 +159,16 @@ impl std::ops::Div<f32> for Velocity {
     }
 }
 
+/// Component-wise vector subtraction
+impl std::ops::Sub<Velocity> for Velocity {
+    type Output = Velocity;
+    fn sub(self, value: Velocity) -> Velocity {
+        let [x1, y1] = self.0;
+        let [x2, y2] = value.0;
+        Velocity::new(x1 - x2, y1 - y2)
+    }
+}
+
 /// Is player "it" or "not it"
 #[derive(Clone, Default, Debug, Component)]
 pub struct Tagged(pub TagState);
@@ -181,6 +192,17 @@ pub struct TagCount(pub u64);
 /// Has the player been tagged recently? At what timestamp if so
 #[derive(Default, Component)]
 pub struct RecentlyTagged(pub Option<u128>);
+
+/// A player has endurance that changes each tick
+/// First value is current, second is max endurance
+#[derive(Default, Component)]
+pub struct Endurance(pub u16, pub u16);
+impl Distribution<Endurance> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Endurance {
+        let initial = rng.gen_range(600..800);
+        Endurance(initial, initial)
+    }
+}
 
 /// Map of recently tagged players
 #[derive(Default, Component)]

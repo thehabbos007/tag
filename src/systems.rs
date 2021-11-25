@@ -1,5 +1,6 @@
 use std::borrow::BorrowMut;
 
+use rand::Rng;
 use raylib::prelude::*;
 use shipyard::*;
 use spade::rtree::RTree;
@@ -10,7 +11,7 @@ use crate::{
         PlayerBehaviour, PlayersPositionRTree, Position, RLHandle, RLThread, RTreeData,
         RecentlyTagged, TagCount, TagState, Tagged, Time, Velocity,
     },
-    HEIGHT, PLAYER_SIZE, WIDTH,
+    Endurance, HEIGHT, PLAYER_SIZE, WIDTH,
 };
 
 pub fn window_should_close(world: &World) -> bool {
@@ -43,6 +44,7 @@ pub fn register_workloads(world: &World) {
         .with_system(tag_collided_players)
         // Clear recently tagged players
         .with_system(clear_old_recently_tagged)
+        .with_system(regain_endurance)
         .add_to_world(&world)
         .unwrap();
 
@@ -54,14 +56,20 @@ pub fn register_workloads(world: &World) {
 }
 
 /// Move players in accordance to their velocity
-fn update_player_position(v_velocity: View<Velocity>, mut vm_position: ViewMut<Position>) {
-    for (pos, vel) in (&mut vm_position, &v_velocity).iter() {
+fn update_player_position(
+    v_velocity: View<Velocity>,
+    mut vm_endurance: ViewMut<Endurance>,
+    mut vm_position: ViewMut<Position>,
+) {
+    for (pos, endurance, vel) in (&mut vm_position, &mut vm_endurance, &v_velocity).iter() {
         let geo_pos = &mut pos.0;
-        let geo_vel = &vel.0;
+        let geo_vel = endurance_velocity_scale(endurance, vel).0;
 
         // A player will wrap around if they hit corners 2d-game style
         geo_pos[0] = (geo_pos[0] + (geo_vel[0])).rem_euclid(WIDTH as f32);
         geo_pos[1] = (geo_pos[1] + (geo_vel[1])).rem_euclid(HEIGHT as f32);
+
+        endurance.0 = u16::max(endurance.0 - 1, 1);
     }
 }
 
@@ -127,6 +135,27 @@ fn commit_player_behaviour(
             TagState::NotIt => behaviour.not_it_behaviour.revise_orientation(ctx),
             TagState::It => behaviour.it_behaviour.revise_orientation(ctx),
         };
+    }
+}
+
+/// Players have their own behaviour which differs between when they're "it" and "not it"
+/// A player might wander aimlessly when "not it" but target nearest neighbours when "it"
+fn regain_endurance(v_tagged: View<Tagged>, mut vm_endurance: ViewMut<Endurance>) {
+    let mut rng = rand::thread_rng();
+
+    for (tag, endurance) in (&v_tagged, &mut vm_endurance).iter() {
+        match tag.0 {
+            TagState::NotIt => {
+                if rng.gen_bool(0.01) && endurance.0 < endurance.1 {
+                    endurance.0 += rng.gen_range(0..50);
+                }
+            }
+            TagState::It => {
+                if rng.gen_bool(0.05) && endurance.0 < endurance.1 {
+                    endurance.0 += rng.gen_range(0..50);
+                }
+            }
+        }
     }
 }
 
@@ -207,6 +236,7 @@ fn render_players(
     rlt: NonSendSync<UniqueView<RLThread>>,
     positions: View<Position>,
     velocities: View<Velocity>,
+    endurance: View<Endurance>,
     tagged: View<Tagged>,
     uv_tag_count: UniqueView<TagCount>,
 ) {
@@ -215,8 +245,10 @@ fn render_players(
     d.clear_background(Color::WHITE);
 
     // Each player is shown with position as dot, line as direction they're facing
-    for (pos, vel, tag) in (&positions, &velocities, &tagged).iter() {
+    for (pos, vel, endurance, tag) in (&positions, &velocities, &endurance, &tagged).iter() {
         let tag = &tag.0;
+
+        let vel = endurance_velocity_scale(endurance, vel);
 
         // The drawn direction vector is shown relative to the drawn player size.
         let direction_vector = (vel.clone() * PLAYER_SIZE).0;
@@ -247,4 +279,11 @@ fn render_players(
         20,
         Color::DARKPURPLE,
     );
+}
+
+/// Helper function to calculated endurace-scaled velocity
+fn endurance_velocity_scale(endurance: &Endurance, vel: &Velocity) -> Velocity {
+    let Endurance(current_endurance, max_endurance) = *endurance;
+    let endurance_factor = 1.0 - current_endurance as f32 / max_endurance as f32;
+    vel.clone() - (vel.clone() / 2. * endurance_factor)
 }
