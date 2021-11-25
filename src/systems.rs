@@ -1,16 +1,13 @@
-use std::{
-    borrow::BorrowMut,
-    collections::{BinaryHeap, HashSet},
-    hash::Hash,
-};
+use std::borrow::BorrowMut;
 
-use rand::Rng;
 use raylib::prelude::*;
 use shipyard::*;
 
 use crate::{
+    behaviours::{BehaviourAction, BehaviourContext},
     entities_components::{
-        Position, RLHandle, RLThread, RecentlyTagged, TagState, Tagged, Time, Velocity,
+        PlayerBehaviour, Position, RLHandle, RLThread, RecentlyTagged, TagState, Tagged, Time,
+        Velocity,
     },
     HEIGHT, PLAYER_SIZE, WIDTH,
 };
@@ -48,25 +45,34 @@ pub fn register_workloads(world: &World) {
         .unwrap();
 }
 
-/// The players are currently "simple" they wander aimlessly without any logic
-/// Each player would be more sophisticated in later versions, such as different tactics
-/// and different attributes.
-fn update_player_position(mut positions: ViewMut<Position>, mut velocities: ViewMut<Velocity>) {
-    let mut rng = rand::thread_rng();
-
-    for (pos, vel) in (&mut positions, &mut velocities).iter() {
-        let mut pos = &mut pos.0;
-        let mut vel = &mut vel.0;
+/// Move players in accordance to their velocity
+fn update_player_position(
+    mut positions: ViewMut<Position>,
+    mut velocities: ViewMut<Velocity>,
+    tagged: View<Tagged>,
+    behaviour: View<PlayerBehaviour>,
+) {
+    for (pos, vel, tag, behaviour) in (&mut positions, &mut velocities, &tagged, &behaviour).iter()
+    {
+        let geo_pos = &mut pos.0;
+        let geo_vel = &mut vel.0;
+        let tag = &tag.0;
 
         // A player will wrap around if they hit corners 2d-game style
-        pos.x = (pos.x + (vel.x)).rem_euclid(WIDTH);
-        pos.y = (pos.y + (vel.y)).rem_euclid(HEIGHT);
+        geo_pos[0] = (geo_pos[0] + (geo_vel[0])).rem_euclid(WIDTH);
+        geo_pos[1] = (geo_pos[1] + (geo_vel[1])).rem_euclid(HEIGHT);
 
-        // Every now and then the player's direction changes
-        if rng.gen_bool(0.005) {
-            vel.x = (vel.x + rng.gen_range(-1..1)) % 5;
-            vel.y = (vel.y + rng.gen_range(-1..1)) % 5;
-        }
+        // When evaluating the behaviour of the agent, some simple context is set up
+        let ctx = BehaviourContext {
+            current_player: (pos, vel),
+            distance_to_it: 0.0,
+        };
+
+        // Behaviours dictate how the players act - mostly their orientation
+        match tag {
+            TagState::NotIt => behaviour.not_it_behaviour.revise_orientation(ctx),
+            TagState::It => behaviour.it_behaviour.revise_orientation(ctx),
+        };
     }
 }
 
@@ -93,7 +99,7 @@ fn tag_collided_players(
         for (id, (pos, mut tag)) in (&positions, &mut tagged).iter().with_id() {
             // The tagged player is touching another, non-tagged player
             if tag.0 != TagState::It
-                && (&it_pos.0).distance_to(&pos.0) <= PLAYER_SIZE
+                && (&it_pos).distance_to(&pos) <= PLAYER_SIZE * 2.0
                 && !recently_tagged.0.contains_key(&id)
             {
                 // Untag the player who is currently "it", tag the "non-it" player and stop.
@@ -143,24 +149,21 @@ fn render_players(
 
     // Each player is shown with position as dot, line as direction they're facing
     for (pos, vel, tag) in (&positions, &velocities, &tagged).iter() {
-        let pos = &pos.0;
-        let vel = &vel.0;
         let tag = &tag.0;
 
         // The drawn direction vector is shown relative to the drawn player size.
-        let direction_vector = vel.clone() * PLAYER_SIZE;
+        let direction_vector = (vel.clone() * PLAYER_SIZE).0;
 
         // Players that are "it" will have a different color.
         let color = match tag {
             TagState::NotIt => Color::BLACK,
             TagState::It => Color::GOLD,
         };
-
-        d.draw_circle(pos.x as i32, pos.y as i32, PLAYER_SIZE, color);
+        d.draw_circle(pos.0[0] as i32, pos.0[1] as i32, PLAYER_SIZE, color);
         let ray_pos: Vector2 = pos.into();
         let ray_end_pos: Vector2 = Vector2 {
-            x: ray_pos.x + (direction_vector.x as f32),
-            y: ray_pos.y + (direction_vector.y as f32),
+            x: ray_pos.x + (direction_vector[0] as f32),
+            y: ray_pos.y + (direction_vector[1] as f32),
         };
         d.draw_line_ex(
             ray_pos,

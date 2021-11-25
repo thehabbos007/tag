@@ -1,13 +1,13 @@
 #![feature(hash_drain_filter)]
 
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::rc::Rc;
 use std::time::SystemTime;
 
 use rand::prelude::*;
 use shipyard::*;
 
+mod behaviours;
 mod entities_components;
 mod systems;
 use crate::entities_components::*;
@@ -17,9 +17,9 @@ use crate::systems::*;
 const PLAYER_COUNT: usize = 50;
 const PLAYER_SIZE: f32 = 10.0;
 /// Width of the `world` view
-const WIDTH: i16 = 1024;
+const WIDTH: i32 = 1024;
 /// Height of the `world` view
-const HEIGHT: i16 = 1024;
+const HEIGHT: i32 = 1024;
 
 fn main() {
     let (mut rl, thread) = raylib::init()
@@ -45,6 +45,7 @@ fn main() {
                 rng.gen::<Position>(),
                 rng.gen::<Velocity>(),
                 Tagged(TagState::default()),
+                PlayerBehaviour::default(),
             )
         }))
         .next();
