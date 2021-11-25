@@ -1,7 +1,9 @@
+use std::collections::{HashMap, HashSet};
+
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use raylib::math::Vector2;
-use shipyard::Component;
+use shipyard::{Component, EntityId};
 
 use crate::{HEIGHT, WIDTH};
 
@@ -56,6 +58,13 @@ impl Geo2D {
         let factor = self.inv_sqrt();
         self.clone() * factor
     }
+
+    pub fn distance_to(&self, other: &Geo2D) -> f32 {
+        f32::sqrt(
+            i32::pow((other.x - self.x) as i32, 2) as f32
+                + i32::pow((other.y - self.y) as i32, 2) as f32,
+        )
+    }
 }
 
 impl std::ops::Mul<f32> for Geo2D {
@@ -65,6 +74,19 @@ impl std::ops::Mul<f32> for Geo2D {
             x: self.x * (value as i16),
             y: self.y * (value as i16),
         }
+    }
+}
+
+/// A player can either "be it" or "not be it"
+#[derive(PartialEq, Eq, Debug)]
+pub enum TagState {
+    NotIt,
+    It,
+}
+
+impl Default for TagState {
+    fn default() -> Self {
+        Self::NotIt
     }
 }
 
@@ -97,8 +119,22 @@ impl Distribution<Velocity> for Standard {
     }
 }
 
-// Wrap raylib structs in a Shipyard ECS component.
+/// Is player "it" or "not it"
+#[derive(Debug, Component)]
+pub struct Tagged(pub TagState);
+
+/// Epoch timestamp in milliseconds
+#[derive(Component)]
+pub struct Time(pub u128);
+
+/// Map of recently tagged players
+#[derive(Component)]
+pub struct RecentlyTagged(pub HashMap<EntityId, u128>);
+
+/// Wrap raylib handler in a Shipyard ECS component.
 #[derive(Component)]
 pub struct RLHandle(pub raylib::RaylibHandle);
+
+/// Wrap raylib thread in a Shipyard ECS component.
 #[derive(Component)]
 pub struct RLThread(pub raylib::RaylibThread);
