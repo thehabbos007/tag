@@ -35,7 +35,9 @@ fn main() {
     world.add_unique_non_send_sync(RLThread(thread)).unwrap();
 
     // Time is kept and updated after every frame/tick
-    world.add_unique(Time(0)).unwrap();
+    world.add_unique(Time::default()).unwrap();
+    // Total number of tags shown in view
+    world.add_unique(TagCount::default()).unwrap();
     // R*-Tree over all players used each frame
     world.add_unique(PlayersPositionRTree::default()).unwrap();
 

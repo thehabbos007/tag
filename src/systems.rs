@@ -8,7 +8,7 @@ use crate::{
     behaviours::{BehaviourAction, BehaviourContext},
     entities_components::{
         PlayerBehaviour, PlayersPositionRTree, Position, RLHandle, RLThread, RTreeData,
-        RecentlyTagged, TagState, Tagged, Time, Velocity,
+        RecentlyTagged, TagCount, TagState, Tagged, Time, Velocity,
     },
     HEIGHT, PLAYER_SIZE, WIDTH,
 };
@@ -126,6 +126,7 @@ fn commit_player_behaviour(
 fn tag_collided_players(
     v_position: View<Position>,
     uv_time: UniqueView<Time>,
+    mut uvm_tag_count: UniqueViewMut<TagCount>,
     mut vm_recently_tagged: ViewMut<RecentlyTagged>,
     mut vm_tagged: ViewMut<Tagged>,
     //`mut recently_tagged: UniqueViewMut<RecentlyTagged>,
@@ -170,6 +171,9 @@ fn tag_collided_players(
                 tagged.0 = TagState::NotIt;
                 // mark previously-tagged player as recently tagged
                 recently_tagged.0 = Some(uv_time.0);
+
+                // Increment total tag count
+                uvm_tag_count.0 += 1;
             };
         }
     }
@@ -201,6 +205,7 @@ fn render_players(
     positions: View<Position>,
     velocities: View<Velocity>,
     tagged: View<Tagged>,
+    uv_tag_count: UniqueView<TagCount>,
 ) {
     let mut d = rlh.0.begin_drawing(&rlt.0);
 
@@ -231,4 +236,12 @@ fn render_players(
             Color::BLUE,
         )
     }
+
+    d.draw_text(
+        format!("Total taggings: {}", uv_tag_count.0).as_str(),
+        12,
+        12,
+        20,
+        Color::DARKPURPLE,
+    );
 }

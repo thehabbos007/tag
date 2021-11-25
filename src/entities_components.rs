@@ -176,6 +176,10 @@ pub struct PlayerBehaviour {
 #[derive(Default, Component)]
 pub struct Time(pub u128);
 
+/// Total number of tags that has happened
+#[derive(Default, Component)]
+pub struct TagCount(pub u64);
+
 /// Map of recently tagged players
 #[derive(Default, Component)]
 pub struct RecentlyTagged(pub Option<u128>);
@@ -216,26 +220,6 @@ mod test {
     use crate::entities_components::Position;
 
     use super::Velocity;
-    // macro_rules! assert_delta {
-    //     ($x:expr, $y:expr, $d:expr) => {
-    //         if !($x - $y < $d || $y - $x < $d) {
-    //             panic!();
-    //         }
-    //     };
-    // }
-
-    // #[test]
-    // fn test_rotate_to_point() {
-    //     let my_pos = Position::new(600., 302.);
-    //     let my_vel = Velocity::new(1.3, -0.7);
-
-    //     let near_pos = Position::new(443., 232.);
-
-    //     let angle = my_pos.angle_to(&near_pos);
-    //     let new_vel = my_vel.rotate_angle(angle);
-
-    //     dbg!(&my_vel, &new_vel);
-    // }
 
     #[test]
     fn test_points() {
