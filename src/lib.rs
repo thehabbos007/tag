@@ -1,5 +1,3 @@
-#![feature(hash_drain_filter)]
-
 use rand::prelude::*;
 use shipyard::*;
 
