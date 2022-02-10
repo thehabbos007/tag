@@ -73,6 +73,6 @@ tick world              time:   [32.956 ms 33.014 ms 33.073 ms]
 
 ```
 
-And the simulation engine can handle millions of agents if real-time is not a concert, but at around 3 seconds/tick.
+And the simulation engine can handle millions of agents if real-time is not a concern, but at around 3 seconds/tick.
 
 There is some potential for further parallelism through parallel iteration in Rayon, but the current setup does not allow for that trivially. For basic sing-component iterations, it is possible, but for iterations across entities with multiple components, the plumbing needed is not in place out-of-the box.
